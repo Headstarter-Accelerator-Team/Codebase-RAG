@@ -1,7 +1,9 @@
 import streamlit as st
 from streamlit_chat import message
 from utils.git_utils import clone_repository
-from utils.file_utils import list_files_recursive
+from utils.file_utils import list_files_recursive, get_file_extension, process_python_files
+from utils.embeddings_utils import embed_code
+from utils.rag_utils import perform_rag
 
 with st.form("my_form"):
     url = st.text_input("Enter Github http url...")
@@ -17,6 +19,18 @@ if submit:
         files = []
         list_files_recursive(path, files)
         print(files)
+
+        processedFiles = files[:]
+        for i in range(0, len(processedFiles)):
+            if get_file_extension(processedFiles[i]['src']) == '.py':
+                processedFiles[i] = process_python_files(processedFiles[i])
+                print(processedFiles[i])
+
+        # print("\n\n", processedFiles)
+        embed_code(files, url)
+        
+
+
 
     else:
         print("Please, type in a github repository url.")
@@ -51,7 +65,9 @@ if prompt := st.chat_input("What is up?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    response = f"Echo: {prompt}"
+    rag_response = perform_rag(prompt, url, "llama3-70b-8192")
+
+    response = f"Echo: {rag_response}"
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
