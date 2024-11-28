@@ -5,6 +5,25 @@ class PythonParser:
         # Constructor for the parser class (currently unused)
         pass
 
+    def convert_python_to_ast(self, file_content):
+        """
+        Converts Python source code into its Abstract Syntax Tree (AST) representation.
+
+        Args:
+            file_content (str): The content of the Python file as a string.
+
+        Returns:
+            dict: A dictionary containing the AST representation of the provided Python code
+              in a string format with indentation for readability.
+        """
+        # Converts Python source code to AST
+        tree = ast.parse(file_content)
+        # Turns ast object into a more readable dictionary
+        tree_string_format = ast.dump(tree, indent=4)
+        return {
+            "ast_representation": tree_string_format
+        }
+
     def process_node(self, node, line_start, line_end, largest_size, largest_enclosing_context):
         """
         Check if the given AST node encompasses the specified line range (line_start to line_end).
@@ -62,6 +81,7 @@ class PythonParser:
             "largest_size": largest_size,
             "largest_enclosing_context": ast.dump(largest_enclosing_context) if largest_enclosing_context else None
         }
+    
 
 # Example Usage
 if __name__ == "__main__":
@@ -80,4 +100,8 @@ def bar():
     parser = PythonParser()
     # Find the enclosing context for lines 3 to 4 in the example code
     result = parser.find_enclosing_context(file_content, 3, 4)
-    print(result)  # Print the result of the analysis
+    # print(result)  # Print the result of the analysis
+
+    result = parser.convert_python_to_ast(file_content)['ast_representation']
+    print("\n\n",result)
+
