@@ -5,52 +5,50 @@ from utils.file_utils import list_files_recursive, get_file_extension, process_p
 from utils.embeddings_utils import embed_code
 from utils.rag_utils import perform_rag
 
-with st.form("my_form"):
-    url = st.text_input("Enter Github http url...")
-    submit = st.form_submit_button("Submit")
 
+# Create a form for user input to accept a GitHub repository URL
+with st.form("my_form"):
+    url = st.text_input("Enter Github http url...") # Text input for GitHub URL
+    submit = st.form_submit_button("Submit") # Submit button to process the input
+
+# Check if the form was submitted
 if submit:
     print("Url: ", url)
+    # If URL is provided, clone the repository
     if url:
         print("Calling function clone_repository...")
-        path = "./" + clone_repository(url)
+        path = "./" + clone_repository(url) # Clone the repository to a local path
         print("Rep has been clone to: ", path)
+
+        # Initialize an empty list to store file information
         files = []
-        list_files_recursive(path, files)
+        list_files_recursive(path, files) # Recursively list all files in the repository
         print(files)
 
-        processedFiles = files[:]
+        # Process only Python files in the cloned repository
+        processedFiles = files[:] # Make a copy of the file list
         for i in range(0, len(processedFiles)):
-            if get_file_extension(processedFiles[i]['src']) == '.py':
-                processedFiles[i] = process_python_files(processedFiles[i])
+            if get_file_extension(processedFiles[i]['src']) == '.py': # Check if the file has a .py extension
+                processedFiles[i] = process_python_files(processedFiles[i]) # Process the Python file
                 print(processedFiles[i])
 
         # print("\n\n", processedFiles)
+
+        # Embed the code from the repository which will be inserted into Pinecone db
         embed_code(files, url)
         
+        # Show success message in the Streamlit app
         st.success('Repository successfully added!', icon="✅")
-
-
-
     else:
+        # Handle case where URL is not provided
         print("Please, type in a github repository url.")
         st.error('Please, type in a github repository url.', icon="🚨")
 
 
 
-
-# uploaded_files = st.file_uploader(
-#     "Choose a CSV file", accept_multiple_files=True
-# )
-
-# for uploaded_file in uploaded_files:
-#     bytes_data = uploaded_file.read()
-#     st.write("filename:", uploaded_file.name)
-    # st.write(bytes_data)
-
-# Initialize chat history
+# Initialize chat history in Streamlit session state
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [] # Create an empty list for storing chat messages
 
 
 # Display chat messages from history on app rerun
