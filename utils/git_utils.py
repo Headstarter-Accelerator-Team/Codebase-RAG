@@ -1,4 +1,7 @@
 import os
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+os.environ["GIT_PYTHON_GIT_EXECUTABLE"] = "C:/Program Files/Git/bin/git.exe"
+import git
 from git import Repo
 
 def clone_repository(repo_url):
