@@ -81,27 +81,5 @@ class PythonParser:
             "largest_size": largest_size,
             "largest_enclosing_context": ast.dump(largest_enclosing_context) if largest_enclosing_context else None
         }
-    
 
-# Example Usage
-if __name__ == "__main__":
-    # Example Python code to parse
-    file_content = """
-def foo():
-    for i in range(10):
-        print(i)
-    return 42
-
-def bar():
-    print("Hello, World!")
-"""
-
-    # Create an instance of the parser
-    parser = PythonParser()
-    # Find the enclosing context for lines 3 to 4 in the example code
-    result = parser.find_enclosing_context(file_content, 3, 4)
-    # print(result)  # Print the result of the analysis
-
-    result = parser.convert_python_to_ast(file_content)['ast_representation']
-    print("\n\n",result)
 

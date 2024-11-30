@@ -1,23 +1,9 @@
-import os
-from git import Repo
 import streamlit as st
 from streamlit_chat import message
-
-def clone_repository(repo_url):
-    """Clones a GitHub repository to a temporary directory.
-
-    Args:
-        repo_url: The URL of the GitHub repository.
-
-    Returns:
-        The path to the cloned repository.
-    """
-    repo_name = repo_url.split("/")[-1]  # Extract repository name from URL
-    repo_name = repo_url.split("/")[-1]  # Extract repository name from URL
-    repo_path = os.path.join(os.getcwd(), "repositories", repo_name)
-    Repo.clone_from(repo_url, repo_path)
-    relative_repo_path = os.path.relpath(repo_path, os.getcwd())
-    return relative_repo_path
+from utils.git_utils import clone_repository
+from utils.file_utils import list_files_recursive, get_file_extension, process_python_files
+from utils.embeddings_utils import embed_code
+from utils.rag_utils import perform_rag
 
 with st.form("my_form"):
     url = st.text_input("Enter Github http url...")
@@ -27,9 +13,24 @@ if submit:
     print("Url: ", url)
     if url:
         print("Calling function clone_repository...")
-        path = clone_repository(url)
+        path = "./" + clone_repository(url)
         print("Rep has been clone to: ", path)
+        files = []
+        list_files_recursive(path, files)
+        print(files)
+
+        processedFiles = files[:]
+        for i in range(0, len(processedFiles)):
+            if get_file_extension(processedFiles[i]['src']) == '.py':
+                processedFiles[i] = process_python_files(processedFiles[i])
+                print(processedFiles[i])
+
+        # print("\n\n", processedFiles)
+        embed_code(files, url)
+        
         st.success('Repository successfully added!', icon="✅")
+
+
 
     else:
         print("Please, type in a github repository url.")
@@ -38,9 +39,9 @@ if submit:
 
 
 
-uploaded_files = st.file_uploader(
-    "Choose a CSV file", accept_multiple_files=True
-)
+# uploaded_files = st.file_uploader(
+#     "Choose a CSV file", accept_multiple_files=True
+# )
 
 # for uploaded_file in uploaded_files:
 #     bytes_data = uploaded_file.read()
@@ -50,6 +51,7 @@ uploaded_files = st.file_uploader(
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -63,7 +65,9 @@ if prompt := st.chat_input("What is up?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    response = f"Echo: {prompt}"
+    rag_response = perform_rag(prompt, url, "llama3-70b-8192")
+
+    response = f"Echo: {rag_response}"
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
