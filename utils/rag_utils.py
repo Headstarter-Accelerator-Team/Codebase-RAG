@@ -21,6 +21,14 @@ def perform_rag(query, repo_url,  primary_model="mixtral-8x7b-32768"):
     """
     Perform RAG (retrieval-augmented generation) with fallback models
     when the primary model fails due to rate limits or errors.
+
+    Args:
+        query (str): The query to perform RAG on.
+        repo_url (str): The URL of the repository.
+        primary_model (str): The primary model to use for RAG.
+
+    Returns:
+        str: The response from the language model.
     """
     fallback_models = FALLBACK_MODELS.get(primary_model, [])
     models_to_try = [primary_model] + fallback_models  # Primary + fallback models
