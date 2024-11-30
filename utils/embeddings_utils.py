@@ -83,7 +83,12 @@ def embed_code(files, repo_url):
                 }
             )
             documents.append(doc)
-
+    
+    index = pc.Index("codebase-rag")
+    if repo_url in index.describe_index_stats()['namespaces']:
+        print("Namespace already exists. Will delete old namespace, and create new namespace with updated data.")
+        index.delete(delete_all=True, namespace=repo_url)
+        print(repo_url, " namespace successfully deleted.")
 
     vectorstore = PineconeVectorStore.from_documents(
         documents=documents,

@@ -10,6 +10,7 @@ st.markdown("""
     <div style="padding: 10px; border-radius: 5px; text-align: center; color: white;">
         <h1>📦 GitHub Repository Analyzer</h1>
         <p>Analyze and embed Python code from GitHub repositories efficiently with <strong>ease</strong>.</p>
+        <p>A <strong>Senior Software Engineer</strong> in your digital pocket.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -67,7 +68,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # React to user input
-if prompt := st.chat_input("What is up?"):
+if prompt := st.chat_input("Ask a Senior Software Engineer your question"):
     # Display user message in chat message container
     st.chat_message("user").markdown(prompt)
     # Add user message to chat history
@@ -75,7 +76,7 @@ if prompt := st.chat_input("What is up?"):
 
     rag_response = perform_rag(prompt, url, "llama-3.1-8b-instant")
 
-    response = f"Echo: {rag_response}"
+    response = f"Senior Software Engineer: {rag_response}"
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
