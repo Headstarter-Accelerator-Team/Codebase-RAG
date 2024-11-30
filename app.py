@@ -1,48 +1,58 @@
 import streamlit as st
 from streamlit_chat import message
-from utils.git_utils import clone_repository
-from utils.file_utils import list_files_recursive, get_file_extension, process_python_files
+from utils.file_utils import preprocess_code_to_ast
+from utils.git_utils import process_repository, is_valid_github_url
 from utils.embeddings_utils import embed_code
 from utils.rag_utils import perform_rag
 
 
-# Create a form for user input to accept a GitHub repository URL
-with st.form("my_form"):
-    url = st.text_input("Enter Github http url...") # Text input for GitHub URL
-    submit = st.form_submit_button("Submit") # Submit button to process the input
+st.markdown("""
+    <div style="padding: 10px; border-radius: 5px; text-align: center; color: white;">
+        <h1>📦 GitHub Repository Analyzer</h1>
+        <p>Analyze and embed Python code from GitHub repositories efficiently with <strong>ease</strong>.</p>
+    </div>
+""", unsafe_allow_html=True)
+
+with st.container():
+    with st.form("my_form"):
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            url = st.text_input("🔗 Enter GitHub repository URL:")
+        with col2:
+            submit = st.form_submit_button("🚀 Analyze")
 
 # Check if the form was submitted
 if submit:
     print("Url: ", url)
     # If URL is provided, clone the repository
-    if url:
-        print("Calling function clone_repository...")
-        path = "./" + clone_repository(url) # Clone the repository to a local path
-        print("Rep has been clone to: ", path)
+    if not url:
+        st.error('Please provide a GitHub repository URL.', icon="🚨")
+    elif not is_valid_github_url(url):
+        st.error('Invalid GitHub repository URL. Ensure it follows the pattern: https://github.com/user/repo.', icon="🚨")
+    else:
+        with st.spinner("Cloning repository..."):
+            files = process_repository(url)
 
-        # Initialize an empty list to store file information
-        files = []
-        list_files_recursive(path, files) # Recursively list all files in the repository
-        print(files)
+        with st.expander("🗂 Repository File Viewer"):
+            for file in files:
+                st.markdown(f"""
+                    <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin: 5px;">
+                        <b>📄 {file['src']}</b>
+                    </div>
+                """, unsafe_allow_html=True)
 
-        # Process only Python files in the cloned repository
-        processedFiles = files[:] # Make a copy of the file list
-        for i in range(0, len(processedFiles)):
-            if get_file_extension(processedFiles[i]['src']) == '.py': # Check if the file has a .py extension
-                processedFiles[i] = process_python_files(processedFiles[i]) # Process the Python file
-                print(processedFiles[i])
 
-        # print("\n\n", processedFiles)
 
-        # Embed the code from the repository which will be inserted into Pinecone db
-        embed_code(files, url)
+        with st.spinner("Processing files..."):
+            # Process only Python files in the cloned repository
+            processedFiles = preprocess_code_to_ast(files)
+
+            # Embed the code from the repository which will be inserted into Pinecone db
+            embed_code(files, url)
         
         # Show success message in the Streamlit app
         st.success('Repository successfully added!', icon="✅")
-    else:
-        # Handle case where URL is not provided
-        print("Please, type in a github repository url.")
-        st.error('Please, type in a github repository url.', icon="🚨")
+
 
 
 
@@ -63,7 +73,7 @@ if prompt := st.chat_input("What is up?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    rag_response = perform_rag(prompt, url, "llama3-70b-8192")
+    rag_response = perform_rag(prompt, url, "llama-3.1-8b-instant")
 
     response = f"Echo: {rag_response}"
     # Display assistant response in chat message container
@@ -71,3 +81,4 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(response)
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
+

@@ -11,9 +11,16 @@ def read_file(path):
     Returns:
         str: The content of the file.
     """
-    with open(path, 'r') as file:
-        content = file.read()
-        return content
+    try:
+        with open(path, 'r', encoding='utf-8') as file:
+            content = file.read()
+    except UnicodeDecodeError:
+        try:
+            with open(path, 'r', encoding='latin-1') as file:
+                content = file.read()
+        except UnicodeDecodeError:
+            content = "Content Not Readable"
+    return content
     
 
 def list_files_recursive(path, files):
@@ -32,7 +39,7 @@ def list_files_recursive(path, files):
             continue
         full_path = os.path.join(path, entry)
         if os.path.isdir(full_path):
-            list_files_recursive(full_path)
+            list_files_recursive(full_path, files)
         else:
             # print(full_path)
             file = {
@@ -79,3 +86,9 @@ def process_python_files(file):
     }
 
 
+def preprocess_code_to_ast(files):
+    processedFiles = files[:]
+    for i in range(0, len(processedFiles)):
+        if get_file_extension(processedFiles[i]['src']) == '.py': # Check if the file has a .py extension
+            processedFiles[i] = process_python_files(processedFiles[i]) # Process the Python file
+    return processedFiles
