@@ -9,6 +9,16 @@ from langchain.schema import Document
 
 
 def get_huggingface_embeddings(text, model_name="sentence-transformers/all-mpnet-base-v2"):
+    """
+    Generates embeddings for the given text using a Hugging Face model.
+
+    Args:
+        text (str): The text to embed.
+        model_name (str): The name of the Hugging Face model to use.
+
+    Returns:
+        numpy.ndarray: The embeddings for the text.
+    """
     model = SentenceTransformer(model_name)
     return model.encode(text)
 
@@ -17,6 +27,14 @@ def get_huggingface_embeddings(text, model_name="sentence-transformers/all-mpnet
 def split_text_into_chunks(text, chunk_size=1000, overlap=200):
     """
     Splits text into chunks of size `chunk_size` with `overlap` between chunks.
+
+    Args:
+        text (str): The text to split.
+        chunk_size (int): The size of each chunk.
+        overlap (int): The number of overlapping characters between chunks.
+
+    Returns:
+        list: A list of text chunks.
     """
     chunks = []
     for i in range(0, len(text), chunk_size - overlap):
@@ -25,6 +43,16 @@ def split_text_into_chunks(text, chunk_size=1000, overlap=200):
 
 
 def embed_code(files, repo_url):
+    """
+    Embeds the code files and stores the embeddings in a Pinecone index.
+
+    Args:
+        files (list): A list of dictionaries containing file information.
+        repo_url (str): The URL of the repository.
+
+    Returns:
+        None
+    """
     # Get PINECONE_API_KEY from an environment variable
     pinecone_api_key = st.secrets["PINECONE_API_KEY"]
 
