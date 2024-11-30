@@ -15,7 +15,6 @@ if submit:
         print("Calling function clone_repository...")
         path = "./" + clone_repository(url)
         print("Rep has been clone to: ", path)
-        st.success('Repository successfully added!', icon="✅")
         files = []
         list_files_recursive(path, files)
         print(files)
@@ -29,6 +28,7 @@ if submit:
         # print("\n\n", processedFiles)
         embed_code(files, url)
         
+        st.success('Repository successfully added!', icon="✅")
 
 
 
