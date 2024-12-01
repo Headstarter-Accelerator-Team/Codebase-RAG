@@ -8,7 +8,7 @@ from langchain.schema import Document
 from utils.file_utils import get_file_extension
 
 
-
+#get embeddings from huggingface
 
 def get_huggingface_embeddings(text, model_name="sentence-transformers/all-mpnet-base-v2"):
     model = SentenceTransformer(model_name)
@@ -66,7 +66,7 @@ def embed_code(files, repo_url, max_chunk_size=40620):
             for chunk_index, chunk in enumerate(content_chunks):
                 doc = Document(
                     page_content=f"{file_name}\n{chunk}",
-                    metadata={
+                    metadata={ #metadata for the chunk
                         "source": file_name,
                         "chunk_index": chunk_index,
                         "total_chunks": len(content_chunks),
@@ -96,7 +96,7 @@ def embed_code(files, repo_url, max_chunk_size=40620):
             
             documents.append(doc)
 
-
+# add documents as vectors to the vector store in pinecone
     vectorstore = PineconeVectorStore.from_documents(
         documents=documents,
         embedding=HuggingFaceEmbeddings(),

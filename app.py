@@ -24,7 +24,7 @@ for repo_name in repo_names:
             try:
                 with open(f"./repositories/{repo_name}/.git/config", 'r') as f:
                     config = f.read()
-                    # Extract URL from git config
+                    # Extract URL from git config IMPORTANT for finding data from the pincone db
                     url_start = config.find('url = ') + 6
                     url_end = config.find('\n', url_start)
                     url = config[url_start:url_end]

@@ -1,10 +1,10 @@
 import os
 from utils.python_parser import PythonParser
 
-
+#supported file extensions, the only types of files we want to process
 SUPPORTED_EXTENSIONS = {'.py', '.js', '.tsx', '.jsx', '.java', '.ipynb',
                          '.cpp', '.ts', '.go', '.rs', '.vue', '.swift', '.c', '.h'}
-
+#directories we want to ignore
 IGNORED_DIRS = {'node_modules', 'venv', 'env', 'dist', 'build', '.git',
                 '__pycache__', '.next', '.vscode', 'vendor', 'Lib'}
 def read_file(path):
@@ -12,7 +12,7 @@ def read_file(path):
         with open(path, 'r', encoding='utf-8') as file:
             content = file.read()
             return content
-    except UnicodeDecodeError:
+    except UnicodeDecodeError: #if the file is not encoded in utf-8, try to decode it with latin-1
         print(f"Could not decode {path} with UTF-8. Trying with 'latin-1'.")
         with open(path, 'r', encoding='latin-1') as file:
             content = file.read()
@@ -21,7 +21,7 @@ def read_file(path):
 
 def list_files_recursive(path, files):
     for entry in os.listdir(path):
-        # Skip ignored directories and .pyc files
+        # Skip ignored directories and .pyc files / been a problem as code thinks py ad pyc are acceptablre
         if entry == ".git" or entry.endswith('.pyc') or entry == '__pycache__':
             continue
             
