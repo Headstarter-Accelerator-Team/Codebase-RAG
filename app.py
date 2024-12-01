@@ -7,6 +7,9 @@ from utils.file_utils import get_main_files_content, list_files_recursive, get_f
 from utils.embeddings_utils import embed_code
 from utils.rag_utils import perform_rag
 
+if not os.path.exists("./uploaded_images"):
+    os.makedirs("./uploaded_images")
+
 # Add at the beginning of the file after imports
 if 'repo_url_mapping' not in st.session_state:
     st.session_state.repo_url_mapping = {}
@@ -37,8 +40,9 @@ for repo_name in repo_names:
 with st.form("my_form"):
     url = st.text_input("Enter Github http url...")
     selected_repo = []
-    repo_names = get_repository_names("./repositories")  # Adjust the path as needed
-    selected_repo = (st.multiselect("Select repositories:", repo_names) ) # Multi-select for repo selection
+    repo_names = get_repository_names("./repositories")  
+    # Multi-select for repo selection
+    selected_repo = (st.multiselect("Select repositories:", repo_names) ) 
     submit = st.form_submit_button("Submit")
 
 if submit:
@@ -79,14 +83,23 @@ if submit:
 
 
 
-# uploaded_files = st.file_uploader(
-#     "Choose a CSV file", accept_multiple_files=True
-# )
+uploaded_files = st.file_uploader(
+    "Upload images", accept_multiple_files=True, type=["jpg", "jpeg", "png"]
+)
 
 # for uploaded_file in uploaded_files:
 #     bytes_data = uploaded_file.read()
 #     st.write("filename:", uploaded_file.name)
-    # st.write(bytes_data)
+#     st.write(bytes_data)
+
+uploaded_image_paths = []
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        file_path = f"./uploaded_images/{uploaded_file.name}"
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        uploaded_image_paths.append(file_path)
+    st.success(f"{len(uploaded_image_paths)} image(s) uploaded successfully.")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -105,6 +118,9 @@ if prompt := st.chat_input("What is up?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
+    if uploaded_image_paths:
+        st.chat_message("user").markdown(f"Uploaded images: {', '.join([os.path.basename(p) for p in uploaded_image_paths])}")
+
     # Debug prints for URL mapping
     print("\n=== DEBUG: URL MAPPING ===")
     print("Session state mapping:", st.session_state.repo_url_mapping)
@@ -116,7 +132,7 @@ if prompt := st.chat_input("What is up?"):
     print("=== END URL MAPPING ===\n")
     
     # Use the URLs as namespaces for querying Pinecone
-    rag_response = perform_rag(prompt, selected_urls)
+    rag_response = perform_rag(prompt, selected_urls, images=uploaded_image_paths)
     response = f"Echo: {rag_response}"
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
