@@ -1,9 +1,14 @@
 import streamlit as st
+import google.generativeai as genai
 from openai import OpenAI
 from utils.embeddings_utils import get_huggingface_embeddings
 from pinecone import Pinecone
 import time
 from collections import defaultdict
+from PIL import Image
+# Configure Gemini
+
+
 
 
 client = OpenAI(
@@ -22,11 +27,21 @@ pinecone_index = pc.Index("codebase-rag")
 
 
 
-def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
+def perform_rag(query,repositories , primary_model="llama3-8b-8192", images=None ):
+    # Process images if provided
+    image_parts = []
+    if images:
+        for image_path in images:
+            try:
+                image = Image.open(image_path)
+                image_parts.append(image)
+            except Exception as img_error:
+                print(f"Error processing image {image_path}: {img_error}")
+    
     FALLBACK_MODELS = {
-    "llama3-8b-8192": ["llama-3.1-8b-instant","gemma-7b-it", "gemma2-9b-it", "llama-3.1-70b-versatile", "llama-3.2-11b-text-preview", "llama-3.2-11b-vision-preview", "llama-3.2-1b-preview", "llama-3.2-3b-preview", "llama-3.2-90b-text-preview", "llama-3.2-90b-vision-preview", "llama-guard-3-8b", "llama3-70b-8192", "llama3-8b-8192", "llama3-groq-70b-8192-tool-use-preview", "llama3-groq-8b-8192-tool-use-preview", "llava-v1.5-7b-4096-preview", "mixtral-8x7b-32768"
-],
-    "llama-3.1-70b-versatile": ["llama-3.2-1b-preview", "llama-3.2-3b-preview"],
+     "llama3-8b-819": ["llama-3.1-8b-instant","gemma-7b-it", "gemma2-9b-it", "llama-3.1-70b-versatile", "llama-3.2-11b-text-preview", "llama-3.2-11b-vision-preview", "llama-3.2-1b-preview", "llama-3.2-3b-preview", "llama-3.2-90b-text-preview", "llama-3.2-90b-vision-preview", "llama-guard-3-8b", "llama3-70b-8192", "llama3-8b-8192", "llama3-groq-70b-8192-tool-use-preview", "llama3-groq-8b-8192-tool-use-preview", "llava-v1.5-7b-4096-preview", "mixtral-8x7b-32768"
+ ],
+     "llama-3.1-70b-versatil": ["llama-3.2-1b-preview", "llama-3.2-3b-preview"],
 }
     """
     Perform RAG (retrieval-augmented generation) with fallback models
@@ -51,7 +66,7 @@ def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
             for repo in repositories:
                 matches = pinecone_index.query(
                     vector=raw_query_embedding.tolist(), 
-                    top_k=20, 
+                    top_k=15, 
                     include_metadata=True, 
                     namespace=repo
                 )
@@ -67,7 +82,7 @@ def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
             contexts = {}
             for repo_key in top_matches.keys():
                 contexts[repo_key] = [{
-                    'text': item.metadata.get('page_content', ''),
+                    'text': item.metadata.get('text', ''),
                     'source': item.metadata.get('source', ''),
                     'chunk_index': item.metadata.get('chunk_index'),
                     'total_chunks': item.metadata.get('total_chunks'),
@@ -89,7 +104,7 @@ def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
             # Add context for each repository
             for repo_key in contexts.keys():
                 augmented_query += f"<CONTEXT for {repo_key}>\n"
-                for context in contexts[repo_key][:10]:  # Still limiting to top 10 matches for readability
+                for context in contexts[repo_key]:  # [:5] ->Still limiting to top 10 matches for readability
                     augmented_query += f"""
                     File: {context['source']}
                     Type: {'AST' if context['is_ast'] else 'Source Code'}
@@ -97,7 +112,7 @@ def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
                     {f'Chunk {context["chunk_index"] + 1} of {context["total_chunks"]}' if context['is_chunked'] else 'Complete File'}
 
                     Content:
-                    {context['text']}
+                    {context["text"]}
                     -------
                     """
                 augmented_query += f"</CONTEXT for {repo_key}>\n\n"
@@ -136,15 +151,32 @@ def perform_rag(query,repositories , primary_model="llama3-8b-8192"):
             print(augmented_query)
             print("=== END OF QUERY ===\n")
             # LLM call
-            llm_response = client.chat.completions.create(
-                model="llama3-8b-8192",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": augmented_query}
-                ]
-            )
+            
+            genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-            # Extract raw response
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Generate response using Gemini Flash with both text and images
+            prompt = f"{system_prompt}\n\n{augmented_query}"
+            
+            if image_parts:
+                # If images is present, use multimodal generation
+                response = model.generate_content([prompt, *image_parts])
+            else:
+                # Text-only generation
+                response = model.generate_content(prompt)
+            
+            print("Response successfully retrieved from Gemini Flash")
+            return response.text
+        
+            llm_response = client.chat.completions.create(
+                    model="llama3-8b-8192",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": augmented_query}
+                    ]
+                )
+
+            # Extract raw response from groq
             response = llm_response.choices[0].message.content
 
 
